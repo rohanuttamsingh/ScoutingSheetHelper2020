@@ -1,5 +1,8 @@
-# json files because every user needs their own Google Drive API and TBA API credentials
+# json files because every user needs their own Google Sheets API and TBA API credentials
 *.json
+
+# token.pickle because every user should generate that with their own
+*.pickle
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

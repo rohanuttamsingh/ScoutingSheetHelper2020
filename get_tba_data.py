@@ -39,6 +39,13 @@ def get_metrics(event):
     event: event key (e.g. 2020mdbet)"""
     return tba_session.get(BASE_URL + '/event/%s/oprs' %event).json()
 
+def get_teams_attending_two_events(event1, event2):
+    teams1 = get_teams(event1)
+    teams2 = get_teams(event2)
+    for team1 in teams1:
+        if team1 in teams2:
+            print(team1, 'is attending', event1, '&', event2)
+
 def test():
     key = input('enter event key: ')
     print('teams:', get_teams(key))
@@ -46,4 +53,5 @@ def test():
     print('metrics:', get_metrics(key))
 
 if __name__ == '__main__':
-    test()
+    # test()
+    print(get_teams_attending_two_events('2020vahay', '2020mdedg'))

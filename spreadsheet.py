@@ -21,6 +21,7 @@ TEAMS_RANGE = 'teams'
 MATCHES_RANGE = 'matches'
 RED_SCHEDULE_RANGE = 'red_sched'
 BLUE_SCHEDULE_RANGE = 'blue_sched'
+METRICS_RANGE = 'metrics'
 
 creds = None
 # The file token.pickle stores the user's access and refresh tokens, and is
@@ -51,8 +52,11 @@ def get_key():
     return key_result['values'][0][0]
 
 def fill_teams(event):
-    teams = tba.get_teams(event)
-    body = {'values': [teams]}
+    teams_raw = tba.get_teams(event)
+    teams = []
+    for team in teams_raw:
+        teams.append([team])
+    body = {'values': teams}
     result = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=TEAMS_RANGE, valueInputOption=value_input_option, body=body).execute()
     # print(result) # for debugging
 
@@ -79,7 +83,7 @@ def create_match_list(num_matches):
 def fill_matches(num_matches):
     body = {'values': create_match_list(num_matches)}
     result = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=MATCHES_RANGE, valueInputOption=value_input_option, body=body).execute()
-    print(result) # for debugging
+    # print(result) # for debugging
 
 def fill_schedule(event):
     """Call this method to fill the entire schedule"""
@@ -87,11 +91,21 @@ def fill_schedule(event):
     num_matches = fill_blue_schedule(event)
     fill_matches(num_matches)
 
+def fill_metrics(event):
+    metrics = tba.get_metrics(event)
+    team_data = []
+    for team in metrics['oprs']:
+        team_data.append([team[3:], metrics['oprs'][team], metrics['dprs'][team], metrics['ccwms'][team]])
+    body = {'values': team_data}
+    result = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=METRICS_RANGE, valueInputOption=value_input_option, body=body).execute()
+    print(result) # for debugging
+
 if __name__ == '__main__':
     key = get_key()
-    # fill_teams(key)
+    fill_teams(key)
     # fill_red_schedule(key)
     # fill_blue_schedule(key)
     # print(create_match_list(80))
     # fill_matches(20)
-    fill_schedule(key)
+    # fill_schedule(key)
+    # fill_metrics(key)

@@ -40,11 +40,16 @@ def get_metrics(event):
     return tba_session.get(BASE_URL + '/event/%s/oprs' %event).json()
 
 def get_teams_attending_two_events(event1, event2):
+    """Returns all teams that are attending 2 specified events
+    event1: event key of 1st event of interest
+    event2: event key of 2nd event of interest"""
+    teams_at_both = []
     teams1 = get_teams(event1)
     teams2 = get_teams(event2)
     for team1 in teams1:
         if team1 in teams2:
-            print(team1, 'is attending', event1, '&', event2)
+            teams_at_both.append(team1)
+    return teams_at_both
 
 def test():
     key = input('enter event key: ')

@@ -10,8 +10,8 @@ import get_tba_data as tba
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
-# SPREADSHEET_ID = '1-XxmqQ11Bt-7CXdv15jJwG4fhCMnX_V056vsYL6vc00' # 2020 Bethesda Scouting Sheet Machine
-SPREADSHEET_ID = '14-0lqzfEFppumw82uaCD8cBPqLVUKH2E7I_QyU3aK_s' # [test] 2019 Bethesda Scouting Sheet Machine
+SPREADSHEET_ID = '1-XxmqQ11Bt-7CXdv15jJwG4fhCMnX_V056vsYL6vc00' # 2020 Bethesda Scouting Sheet Machine
+# SPREADSHEET_ID = '14-0lqzfEFppumw82uaCD8cBPqLVUKH2E7I_QyU3aK_s' # [test] 2019 Bethesda Scouting Sheet Machine
 
 value_input_option = 'USER_ENTERED'
 
@@ -22,6 +22,7 @@ MATCHES_RANGE = 'matches'
 RED_SCHEDULE_RANGE = 'red_sched'
 BLUE_SCHEDULE_RANGE = 'blue_sched'
 METRICS_RANGE = 'metrics'
+SAMPLE_TEAM_SHEET_RANGE = 'SampleTeam!A1:W22'
 
 creds = None
 # The file token.pickle stores the user's access and refresh tokens, and is
@@ -67,7 +68,7 @@ def fill_red_schedule(event):
     # print(result) # for debugging
 
 def fill_blue_schedule(event):
-    """returns number of updated rows"""
+    """Returns number of updated rows"""
     blue_schedule = tba.get_color_schedule(event, 'blue')
     body = {'values': blue_schedule}
     result = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=BLUE_SCHEDULE_RANGE, valueInputOption=value_input_option, body=body).execute()
@@ -92,6 +93,7 @@ def fill_schedule(event):
     fill_matches(num_matches)
 
 def fill_metrics(event):
+    """Call this method to fill OPRs, DPRs, and CCWMs for all teams"""
     metrics = tba.get_metrics(event)
     team_data = []
     for team in metrics['oprs']:
@@ -100,12 +102,45 @@ def fill_metrics(event):
     result = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=METRICS_RANGE, valueInputOption=value_input_option, body=body).execute()
     print(result) # for debugging
 
+def get_sample_team_sheet():
+    team_sheet = service.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range=SAMPLE_TEAM_SHEET_RANGE).execute()
+    return team_sheet['values']
+
+def create_team_sheets(event):
+    requests = []
+    teams = tba.get_teams(event)
+    index = 7
+    for team in reversed(teams):
+        requests.append({
+            'addSheet': {
+                'properties': {
+                    'title': team,
+                    'index': index
+                }
+            }
+        })
+    body = {'requests': requests}
+    response = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID, body=body).execute()
+
+def copy_to_team_sheets(event, to_copy):
+    teams = tba.get_teams(event)
+    for team in teams:
+        team_sheet = to_copy
+        team_sheet[0][1] = team
+        body = {'values': team_sheet}
+        range = team + '!A1:W22'
+        result = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=range, valueInputOption=value_input_option, body=body).execute()
+
 if __name__ == '__main__':
     key = get_key()
-    fill_teams(key)
+    # fill_teams(key)
     # fill_red_schedule(key)
     # fill_blue_schedule(key)
     # print(create_match_list(80))
     # fill_matches(20)
     # fill_schedule(key)
     # fill_metrics(key)
+    sample_team_sheet = get_sample_team_sheet()
+    # print(sample_team_sheet)
+    create_team_sheets(key)
+    copy_to_team_sheets(key, sample_team_sheet)
